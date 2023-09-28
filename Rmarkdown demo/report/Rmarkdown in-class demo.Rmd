@@ -61,3 +61,7 @@ cars
 
 a <- 245
 ```
+
+```{r}
+#this is a test for lecture 4
+```
