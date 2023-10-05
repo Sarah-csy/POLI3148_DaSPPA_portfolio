@@ -84,6 +84,35 @@ d_gdp |>
 
 ```
 
+```{r}
+# Want countries-years with highest GDP
+d_gdp |> slice_max(order_by = GDP, n = 10)
+
+## # A tibble: 10 × 5
+##    Country                     ID  Year      GDP GDP_per_capita
+##    <chr>                    <dbl> <dbl>    <dbl>          <dbl>
+##  1 China                      110  2019 2279809.           15.4
+##  2 China                      110  2018 2205730.           14.9
+##  3 China                      110  2017 2136176.           14.5
+##  4 United States of America    20  2019 2118706.           60.6
+##  5 United States of America    20  2018 2077898.           59.6
+##  6 China                      110  2016 2039529.           13.9
+##  7 United States of America    20  2017 2023242.           58.5
+##  8 United States of America    20  2016 1980809.           57.6
+##  9 China                      110  2015 1953127.           13.3
+## 10 United States of America    20  2015 1942092.           56.7
+```
+
+```{r}
+# Get countries-years with the lowest GDP
+d_gdp |> slice_min(order_by = GDP, n = 10)
+```
+
+```{r}
+set.seed(52)
+d_gdp |> slice_sample(n = 10) # Sample 10 observations
+```
+
 ### 5. to take a subset of *rows* by some more complicated conditions: `filter`
 
 want 2000-2005
@@ -91,6 +120,14 @@ want 2000-2005
 ```{r}
 d_gdp |>
   filter(Year>=2000 & Year<=2005 & Country == "China")
+```
+
+```{r}
+d_gdp_china <- d_gdp |> filter(Country == "China")|> filter(Country == "China")
+```
+
+```{r}
+d_gdp_china
 ```
 
 ### 6. to sort the rows based on the value of one or multiple columns: `arrange`
@@ -111,6 +148,153 @@ d_gdp |>
 
 ### 7. to perform (4) (5) (6) group by group: `group_by`, `ungroup`
 
+```{r}
+#want: for each country, we want the year with the highest GDP
+# n=1 is mean only one record
+# without groupby, it will only show one result,the higheest gdp
+d_gdp |> 
+  group_by(Country)|>
+  slice_max(GDP,n=1)
+```
+
+```{r}
+# How many entries are there for each country
+d_gdp |>
+  group_by(Country) |>
+  count()
+```
+
+```{r}
+# to look up the fouction of count
+?count
+```
+
+```{r}
+# want: for each Year, get the year when countries has the worst GDP
+d_gdp |>
+  group_by(Country) |>
+  slice_min(order_by = GDP, n=1)
+```
+
 ### 8. to create new columns in the data: `group_by`, `mutate`, `ungroup`
 
+```{r}
+#create a new colum and take the value "1"
+d_gdp |>
+  mutate(New = 1)
+
+d_gdp |>
+  mutate(New=GDP)
+
+d_gdp |> mutate(New=log(GDP))
+
+d_gdp |>
+  mutate(New=log(GDP)+1)
+
+# Want: New colum to be GDp relative to average GDP in the world 1984-2022
+d_gdp |>mutate(GDP_over_avg =GDP / mean(GDP, na.rm=TRUE))
+
+# Want: New column to be gdp relaive to average  gdp of the country in the world 1984-2022
+d_gdp |>
+  group_by(Country) |>
+  mutate(GDP_over_avg =GDP / mean(GDP, na.rm=TRUE))
+```
+
+```{r}
+#Country-year development level with referene to that of 1984
+?first
+```
+
+```{r}
+d_gdp |>
+  group_by(Country) |>
+  arrange(Year) |>
+  mutate(GDP_over_1984 = GDP/first(GDP)) |>
+  ungroup()|>
+  arrange(Country,Year)
+```
+
+```{r}
+# Year-on-year economic growth
+#?lag
+
+d_gdp |>
+  group_by(Country) |>
+  arrange(Year) |>
+  mutate(GDP_yoy_change = GDP- lag(GDP, n=1)) |>
+  ungroup() |>
+  arrange(Country,Year)
+```
+
 ### 9. to summarize the data: `group_by`, `summarise`, `ungroup`
+
+```{r}
+# Want: Average GDP level of the world
+d_gdp |> summarise(gdp_average = mean(GDP, na.rm= TRUE),
+                   GDP_per_Capita= mean(GDP_per_Capita, na.rm = TRUE))
+```
+
+```{r}
+# Average develoment level
+d_gdp |>
+  group_by(Country)|>
+  summarise(GDP_average = mean(GDP, na.rm= TRUE), GDP_per_Capita = mean(GDP_per_Capita, na.rm=TRUE))
+```
+
+```{r}
+# GDP growth and  GDP per capita growth: 2020 over 1984
+d_gdp |>
+  filter(Year >= 1984, Year <= 2020) |>
+  group_by(Country) |>
+  arrange(Year) |>
+  summarise(GDP_growth_2020_1984 = (last(GDP)-first(GDP))/first(GDP)) |>
+  ungroup()|>
+  arrange(Country)
+```
+
+```{r}
+# Data integrity check
+d_gdp |>
+  group_by(Country) |>
+  # Create a column that indicates whether the value is missing
+  mutate(GDP_missing = as.numeric(is.na(GDP)), .after = GDP) |>
+  group_by(Country) |>
+  summarise(N_GDP_missing = sum(GDP_missing))
+```
+
+#### 
+
+# Lecture 5
+
+### 1. Reshape the V-Dem dataset
+
+```{r}
+d |>select(country_name) |> distinct()
+
+d_subset <- d |>select(country_name, year, starts_with("e_"))
+
+
+d_subset_long <- 
+  d_subset |> pivot_longer(cols = starts_with("e_"))
+```
+
+### 2. Stack multiple subsets of the V-Dem datasets
+
+```{r}
+d_VemIndex <- read_csv("_DataPublic_/vdem/1984_2022/vdem_1984_2022_external.csv")
+```
+
+```{r}
+d_stack <- bind_cols(d,d_VemIndex)
+```
+
+```{r}
+# Want: stack two tables by rows?
+d_1945_1983 <-  read_csv("_DataPublic_/vdem/1945_1983/vdem_1945_1983_external.csv")
+```
+
+```{r}
+d_1945_2022 <-bind_rows(d, d_1945_1983)
+  
+d_1945_2022 |> select(year)|> distinct() |> arrange(year)
+```
