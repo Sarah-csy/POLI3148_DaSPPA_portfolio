@@ -2,7 +2,9 @@
 title: "In-class assignment 2"
 author: "Shukyee Chan"
 date: "`r Sys.Date()`"
-output: html_document
+output:
+  pdf_document: default
+  html_document: default
 ---
 
 ```{r setup, include=FALSE}
@@ -13,16 +15,106 @@ knitr::opts_chunk$set(echo = TRUE)
 
 Look up the codebook, answer the following questions:
 
-1.  What indicators regarding the quality of education are available in the V-Dem datasets?
+What indicators regarding the quality of education are available in the V-Dem datasets?
 
-    Answer: Educational Equality (pg. 208); Existence of universities; Total number of universities; Constitutional protection for academic freedom; Freedom to research and teach; Freedom of academic exchange and dissemination; Institutional autonomy; Campus integrity; Academics as critics; International legal commitment to academic freedom under ICESCR
+Answer: 9.1.1 Education 15+ (E) (e_peaveduc) and 9.1.2 Educational inequality, Gini (E) (e_peedgini)
 
-2.  What are the data's coverage (i.e., for which countries and years do we have data?)
+1.  What are the data's coverage (i.e., for which countries and years do we have data?)
 
-    Answer: Years: 1900-2022; Countries: total 202 countries (pp. 40-41)
+    Answer: Years: 1850-2010; Countries: total 202 countries (pp. 40-41)
 
-3.  What are their sources? Provide the link to least 1 source.
+2.  What are their sources? Provide the link to least 1 source.
 
-    Answer: <https://brendanapfeld.com/files/univ_database.pdf>
+    Answer:
 
-4.  
+    van Leeuwen, B., van Leeuwen-Li, J. & Földvári, P. (2011), 'Regional human capital in Republican and New China: Its spread, quality and effects on economic growth', MPRA Paper 43582, University Library of Munich, Germany .
+
+    URL: <https://mpra.ub.uni-muenchen.de/43582/> <https://ideas.repec.org/p/pra/mprapa/43582.html>
+
+## 2. **Subset by columns**
+
+Create a dataset containing only the country-year identifiers and indicators of education quality.
+
+```{r}
+library(tidyverse)
+```
+
+```{r}
+d <- read.csv("_DataPublic_/vdem/1984_2022/vdem_1984_2022_external.csv")
+```
+
+```{r}
+d |> select(country_name, country_id, year, e_peaveduc, e_peedgini) |> distinct()
+```
+
+```{r}
+d_edu <- d |> select(country_name, country_id, year, e_peaveduc, e_peedgini)
+```
+
+Rename the columns of education quality to make them informative.
+
+```{r}
+d_edu <- d_edu |>
+  rename("Country" = "country_name", "ID" = "country_id", 
+         "Year" = "year", "Education_15" = "e_peaveduc",
+         "Education_inequality" = "e_peedgini")
+```
+
+## 3. **Subset by rows**
+
+List 5 countries-years that have the highest education level among its population.
+
+```{r}
+d_edu |>
+  slice_max(order_by = Education_15, n = 5, with_ties = FALSE)
+```
+
+List 5 countries-years that suffer from the most severe inequality in education.
+
+```{r}
+d_edu |>
+  slice_min(order_by = Education_inequality, n = 5)
+```
+
+## 4. Summarize the data
+
+Check data availability: For which countries and years are the indicators of education quality available?
+
+```{r}
+d_edu |>
+  mutate(Education_15_missing = as.numeric(is.na(Education_15)), .after = Education_15)|>
+  group_by(Country)|>
+  summarise(N_Education_15_missing = sum(Education_15_missing))
+```
+
+```{r}
+d_edu |>
+  mutate(Education_inequality_missing = as.numeric(is.na(Education_inequality)), .after = Education_inequality) |>
+  group_by(Country) |>
+  summarise(N_Education_inequality_missing = sum(Education_inequality_missing))
+```
+
+Average level of education quality from 1984 to 2022
+
+```{r}
+d_edu |>
+  group_by(Country) |>
+  summarise(Education_15_average = mean(Education_15, na.rm = TRUE),
+            Education_inequality_average = mean(Education_inequality, na.rm = TRUE))
+```
+
+Change of education quality from 1984 to 2022
+
+```{r}
+d_edu |>
+  filter(Year >= 1984 & Year <= 2010) |>
+  group_by(Country) |>
+  arrange(Year) |>
+  summarise(Education_15_change_1984_2010 = (last(Education_15) - first(Education_15) / first(Education_15)), Education_inequality_change_1984_2010=  (last(Education_inequality) - first(Education_inequality)) / first(Education_inequality)) |>
+  ungroup() |>
+  arrange(Country)
+```
+
+Examine the data and briefly discuss: Which countries perform the best and the worst in terms of education quality in the past four decades?
+
+Answer: The best is Germany and the worst is Botswana.

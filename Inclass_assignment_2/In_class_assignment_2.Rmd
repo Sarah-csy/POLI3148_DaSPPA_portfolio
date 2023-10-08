@@ -1,0 +1,41 @@
+---
+title: "In_class_assignment_2"
+author: "Shukyee Chan"
+date: "`r Sys.Date()`"
+output:
+  pdf_document: default
+  html_document:
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## 1. Codebook lookup
+
+Look up the codebook, answer the following questions:
+
+What indicators regarding the quality of education are available in the V-Dem datasets?
+
+Answer: 9.1.1 Education 15+ (E) (e_peaveduc) and 9.1.2 Educational inequality, Gini (E) (e_peedgini)
+
+1.  What are the data's coverage (i.e., for which countries and years do we have data?)
+
+    Answer: Years: 1850-2010; Countries: total 202 countries (pp. 40-41)
+
+2.  What are their sources? Provide the link to least 1 source.
+
+    Answer:
+
+    van Leeuwen, B., van Leeuwen-Li, J. & Földvári, P. (2011), 'Regional human capital in Republican and New China: Its spread, quality and effects on economic growth', MPRA Paper 43582, University Library of Munich, Germany .
+
+    URL: <https://mpra.ub.uni-muenchen.de/43582/> <https://ideas.repec.org/p/pra/mprapa/43582.html>
+
+## 2. **Subset by columns**
+
+Create a dataset containing only the country-year identifiers and indicators of education quality.
+
+```{r}
+library(tidyverse)
+```
