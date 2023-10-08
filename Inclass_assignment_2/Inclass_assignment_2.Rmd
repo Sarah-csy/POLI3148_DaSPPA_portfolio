@@ -1,0 +1,28 @@
+---
+title: "In-class assignment 2"
+author: "Shukyee Chan"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## 1. Codebook lookup
+
+Look up the codebook, answer the following questions:
+
+1.  What indicators regarding the quality of education are available in the V-Dem datasets?
+
+    Answer: Educational Equality (pg. 208); Existence of universities; Total number of universities; Constitutional protection for academic freedom; Freedom to research and teach; Freedom of academic exchange and dissemination; Institutional autonomy; Campus integrity; Academics as critics; International legal commitment to academic freedom under ICESCR
+
+2.  What are the data's coverage (i.e., for which countries and years do we have data?)
+
+    Answer: Years: 1900-2022; Countries: total 202 countries (pp. 40-41)
+
+3.  What are their sources? Provide the link to least 1 source.
+
+    Answer: <https://brendanapfeld.com/files/univ_database.pdf>
+
+4.  
