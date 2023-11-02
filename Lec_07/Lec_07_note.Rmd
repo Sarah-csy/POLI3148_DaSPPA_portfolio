@@ -158,7 +158,7 @@ Consistency? Check years that are available in both datasets.
 
 ```{r}
 d_pop_overlap <- d |> select(country_text_id, year, starts_with("population_")) |> 
-  drop_na()
+  drop_na() #remove any row that has at least one missing value
 print(d_pop_overlap, n = 3)
 unique(d_pop_overlap$year)
 cor(d_pop_overlap$population_ClioInfra, d_pop_overlap$population_WorldBank)
@@ -304,11 +304,20 @@ p_all <- d |>
        title = "Wealth and Health in the World (1800-2019)",
        caption = "By Haohan Chen. Data source: V-Dem v.13")
 # Save plot as a .rds file in your folder
+# remenber always label the plot well
 dir.create("Lec_07/1_data_visualization_1/figures")
 saveRDS(p_all, "Lec_07/1_data_visualization_1/figures/welath_and_health_all.rds")
+
+# this is the more popular way and save it as pdf can get a nice quality of image
 # Save plot as a PDF file in your folder
 ggsave(filename = "Lec_07/1_data_visualization_1/figures/welath_and_health_all.pdf", 
        plot = p_all, width = 9, height = 4)
+
+# Save plots as a png format
+ggsave(filename = "Lec_07/1_data_visualization_1/figures/welath_and_health_all.png", 
+       plot = p_all, width = 9, height = 4)
+
+# picture quality will decrease when zoom in
 ```
 
 ## Set Themes: `theme_bw`

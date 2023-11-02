@@ -107,7 +107,7 @@ Visualization tools to use largely depends on variable types
 
 # Quant. X 1
 
-## Viaulize One Quantitative Variable
+## Visualize One Quantitative Variable
 
 -   Summary Statistics
 
@@ -238,6 +238,10 @@ d |> mutate(gdppc_sqrt = sqrt(gdppc)) |> # Transform the variable before visuali
 d |> mutate(gdppc_log = log(gdppc)) |> # Transform the variable before visualization
   ggplot(aes(x = gdppc_log)) + geom_histogram() +
   labs(x = "log(GDP per capita)", y = "Count", title = "Histogram of GDP per capita")
+```
+
+```{r}
+# the above only work only when no negative data in the figures
 ```
 
 ## Skewed Distribution: Note
@@ -450,6 +454,11 @@ d |> ggplot(aes(x = gdppc, y = life_expectancy)) +
 
 \tiny
 
+```{r}
+install.packages("ggrepl")
+library(ggrepel)
+```
+
 ```{r, fig.width=12, fig.height=4, warning=FALSE, message=FALSE}
 d_anno_2 <- d |> filter(year >= 2010, country_text_id == "CHN") |> 
   mutate(anno = paste(country_text_id, year), .after = year)
@@ -476,7 +485,7 @@ d |> ggplot(aes(x = gdppc, y = life_expectancy)) +
   labs(x = "GDP per capita", y = "Life Expectancy", title = "Wealth and Health in the World (1800-2019)")
 ```
 
-## 2D \"Histogram"
+## 2D "Histogram"
 
 \tiny
 
