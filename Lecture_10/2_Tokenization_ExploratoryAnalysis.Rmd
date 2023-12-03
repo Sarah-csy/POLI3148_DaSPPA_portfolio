@@ -30,7 +30,7 @@ library(lubridate)
 ```
 
 ```{r}
-d_fulltext = read_rds("Lec_10/1_Text_Mining/data/data_ce_speech_article.rds")
+d_fulltext = read_rds("Lecture_10/data/data_ce_speech_article.rds")
 # Change the date variable to "date" format
 d_fulltext = d_fulltext |> mutate(date_of_speech = dmy(date_of_speech))
 ```

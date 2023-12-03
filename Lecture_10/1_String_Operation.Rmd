@@ -40,7 +40,7 @@ library(kableExtra)  # Package for data presentation at Rmarkdown
 ## Load Data
 
 ```{r, results="asis"}
-d = read_rds("Lec_10/1_Text_Mining/data/data_ce_speech_article.rds")
+d = read_rds("Lecture_10/data/data_ce_speech_article.rds")
 
 dim(d) # Get dimension of dataset d
 names(d) # Get column names of dataset d
@@ -187,6 +187,8 @@ Now, we want to do the same operation with `MONTH` . Let's start with the same `
 ```{r}
 d_date |>
   mutate(MONTH_t = str_remove(MONTH, "\\."))
+
+# . mean anything, to mean the end
 ```
 
 **Q:** What do you get? What is wrong?

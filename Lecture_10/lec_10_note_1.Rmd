@@ -13,8 +13,6 @@ knitr::opts_chunk$set(echo = TRUE)
 
 In this note, I demonstrate how you may wrangle text data using the `stringr` element of Tidyverse.
 
-## 
-
 ## Load Packages
 
 ```{r}
