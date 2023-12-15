@@ -1,9 +1,12 @@
 ---
 title: "Chan Shuk Yee_3035995096"
-subtitle: "Problem Set 1+2 (15% + 15%)"
+subtitle: Problem Set 1+2 (15% + 15%)
 date: "Due: 2023-12-3 23:59 (HKT)"
-output: pdf_document
-editor_options: 
+output:
+  pdf_document: default
+  html_document:
+    df_print: paged
+editor_options:
   chunk_output_type: inline
 ---
 
@@ -64,8 +67,10 @@ Please read Cantú (2019) for the full story. And see Figure 1 for a few example
 For Better organization, it is a good habit to load all required packages up front at the start of your document. Please load the all packages you use throughout the whole Problem Set here.
 
 ```{r, echo=TRUE}
-# YOUR CODE HERE
 library(tidyverse)
+library(dplyr)
+library(sf)
+library(gridExtra)
 ```
 
 \clearpage
@@ -89,10 +94,9 @@ Note:
 Print your table to show your output.
 
 ```{r, echo=TRUE}
-
-d <- read_csv("data/classification.txt")
-
-d_tally <- read_csv("data/classification.txt", col_names = c("name_image", "label", "probability"))
+# load the data set and name it d_tally
+d_tally <- read_csv("data/classification.txt", 
+                    col_names = c("name_image", "label", "probability"))
 
 print(d_tally)
 ```
@@ -118,14 +122,15 @@ Interpret `label` and `probability` carefully. Two examples can hopefully give y
 As you have seen in the printed outputs, columns `label` and `probability` are read as `chr` variables when they are actually numbers. A close look at the data may tell you why --- they are "wrapped" by some non-numeric characters. In this task, you will clean these two variables and make them valid numeric variables. You are required to use `tidyverse` operations to for this task. Show appropriate summary statistics of `label` and `probability` respectively after you have transformed them into numeric variables.
 
 ```{r, echo=TRUE}
+# clean these two variables
 d_tally <- d_tally |>
-  mutate(label = as.numeric(str_extract(label, "\\d")))
+  mutate(
+    label = as.numeric(str_extract(label, "\\d")),
+    probability = as.numeric(str_extract(probability, "\\d+\\.\\d+")))
 
-
-d_tally <- d_tally |>
-  mutate(probability = as.numeric(str_extract(probability, "\\d+\\.\\d+")))
-
-
+# summary statistics of label and probability
+summary(d_tally$label)
+summary(d_tally$probability)
 print(d_tally)
 ```
 
@@ -136,11 +141,13 @@ print(d_tally)
 As explained in the note, the column `name_image`, which has the names of tally sheets' images, contains information about locations where the tally sheets are produced. Specifically, the first two elements of these file names indicates the **states'** and districts' identifiers respectively, for example, `name_image = "Aguascalientes_I_2014-05-26 00.00.10.jpg"`. It means this tally sheet is produced in state **`Aguascalientes`**, district **`I`**. In this task, you are required to obtain this information. Specifically, create two columns named `state` and `district` as state and district identifiers respectively. You are required to use `tidyverse` functions to perform the task.
 
 ```{r, echo=TRUE}
-
-d_tally <-d_tally |>
-  separate(name_image, into = c("state", "district","name_image"),
-           sep = "_", extra = "merge", remove = FALSE) |>
-  select(name_image, state, district, label, probability)
+# Extract state and district information
+d_tally <- d_tally |>
+  separate(name_image, into = c("state", "district"), sep = "_", remove = FALSE) |>
+  mutate(
+    state = str_remove(state, ".jpg"),
+    state = as.factor(state),
+    district = as.factor(district))
 
 print(d_tally)
 ```
@@ -154,13 +161,12 @@ One of the states (in the newly created column `state`) is coded as "`Estado de 
 Hint: Look up functions `ifelse` and `case_match`.
 
 ```{r, echo=TRUE}
-
+#Re-code a state's name
 d_tally<- d_tally |>
   mutate(
     state = case_when(
       state == "Estado de Mexico" ~ "Edomex",
       TRUE ~ state ))
-
 
 print(d_tally)
 ```
@@ -174,7 +180,7 @@ As explained in Note 1, we need to interpret `label` and `probability` with caut
 *Hint: Look up the `ifelse` function and the `case_when` function (but you just need either one of them).*
 
 ```{r, echo=TRUE}
-
+#probability of fraud indicator
 d_tally <- d_tally |>
   mutate(fraud_proba = ifelse(label == 1, probability, 1 - probability)) |>
   select(-label, -probability)
@@ -189,6 +195,7 @@ print(d_tally)
 In this task, you will create a binary indicator called `fraud_bin` in indicating whether a tally sheet is fraudulent. Following the researcher's rule, we consider a tally sheet fraudulent only when the machine thinks it is at least 2/3 likely to be fraudulent. That is, `fraud_bin` is set to TRUE when `fraud_proba` is greater to `2/3` and is FALSE otherwise.
 
 ```{r, echo=TRUE}
+#binary fraud indicator
 d_tally<- d_tally |>
   mutate(fraud_bin = fraud_proba >= 2/3)
 
@@ -206,18 +213,17 @@ In this section, you will visualize the `tally` dataset that you have cleaned in
 How is the predicted probability of fraud (`fraud_proba`) distributed? Use two methods to visualize the distribution. Remember to add informative labels to the figure. Describe the plot with a few sentences.
 
 ```{r, echo=TRUE, fig.width=5, fig.height=4, out.width="50%", fig.align='center'}
-
+# Use histogram to visualize the distribution
 d_tally |>
   ggplot(aes(x = fraud_proba)) +
   geom_histogram(binwidth = 0.05, fill = "blue", color = "red", alpha = 0.7) +
   labs(title = "Histogram of Predicted Probability of Fraud",
        x = "Probability of Fraud", y = "Count") +
   theme_minimal()
-
 ```
 
 ```{r, echo=TRUE, fig.width=5, fig.height=4, out.width="50%", fig.align='center'}
-
+# Use Density Plot to visualize the distribution
 d_tally |>
   ggplot(aes(x = fraud_proba)) +
   geom_density(fill = "gray", color = "blue", alpha = 0.7) +
@@ -225,9 +231,11 @@ d_tally |>
        x = "Probability of Fraud (fraud_proba)",
        y = "Density") +
   theme_minimal()
-
-#These two plots, the histogram and the density plot, are related to the Predicted Probability of Fraud in the 1998 Mexico election, the x-axis refers to the probability of fraud while the y-axis refers to its count and density. The distribution of the histogram and density plot are non-symmetrical bimodal, the first peak is around the probability of 0.00 and the second peak is around the probability of 1.00.
 ```
+
+Describe the plot with a few sentences:
+
+These two plots, the histogram and the density plot, are related to the Predicted Probability of Fraud in the 1998 Mexico election, the x-axis refers to the probability of fraud while the y-axis refers to its count and density. The distribution of the histogram and density plot are non-symmetrical bimodal, the first peak is around the probability of 0.00 and the second peak is around the probability of 1.00.
 
 \clearpage
 
@@ -236,8 +244,35 @@ d_tally |>
 How many tally sheets are fraudulent and how many are not? We may answer this question by visualizing the binary indicator of tally-level states of fraud. Use at least two methods to visualize the distribution of `fraud_bin`. Remember to add informative labels to the figure. Describe your plots with a few sentences.
 
 ```{r, echo=TRUE, fig.width=5, fig.height=4, out.width="50%", fig.align='center'}
-# YOUR CODE HERE
+## Use Stacked Bar Chart to visualize the distribution
+d_tally |>
+  group_by(state, district, fraud_bin) |>
+  summarise(n_obs = n()) |>
+  ggplot(aes(x = n_obs, y = state, fill = factor(fraud_bin))) +
+  geom_bar(stat = "identity", position = "stack") +
+  labs(y = "State", x = "Count", title = "Distribution of Fraudulent and Non-Fraudulent Tally Sheets by State", fill = "(Non-)Fraudulent") +  theme_minimal()+
+    scale_fill_manual(values = c("TRUE" = "blue", "FALSE" = "red", "NA" = "gray"))
+
 ```
+
+Describe your plots with a few sentences:
+
+The title of the stacked bar chart is Distribution of fraudulent and non-fraudulent tally sheets by state, it shows that there is a special case in Distrito Federal. In the case of Distrito Federal, the situation of fraudulent tally sheets is relatively more serious than in other states and far away from the second most fraudulent tally sheets.
+
+```{r, echo=TRUE, fig.width=5, fig.height=4, out.width="50%", fig.align='center'}
+d_tally |>
+  group_by(fraud_bin) |>
+  summarise(n_obs = n()) |>
+  ggplot(aes(x = "", y = n_obs, fill = factor(fraud_bin))) +
+  geom_bar(stat = "identity", width = 1) +
+  coord_polar(theta = "y") +
+  labs(title = "Distribution of Fraudulent and Non-Fraudulent Tally Sheets", fill = "(Non-)Fraudulent") +  theme_minimal()+
+  scale_fill_manual(values = c("TRUE" = "blue", "FALSE" = "red", "NA" = "gray"))
+```
+
+Describe your plots with a few sentences:
+
+The title of the pie bar chart is Distribution of fraudulent and non-fraudulent tally sheets by state, it shows that more than half of the data is fraudulent. As seen from the stacked bar chart and the pie chart, it is concentrated at the "false."
 
 The figure below serve as a reference. Feel free to try alternative approach(es) to make your visualization nicer and more informative.
 
@@ -248,7 +283,15 @@ The figure below serve as a reference. Feel free to try alternative approach(es)
 Next, we will examine the between-state variation with regards to the prevalence of election fraud. In this task, you will create a new object that contains two state-level indicators regarding the prevalence of election fraud: The count of fraudulent tallies and the proportion of fraudulent tallies.
 
 ```{r, echo=TRUE}
-# YOUR CODE HERE
+# Summarize prevalence of fraud by state
+d_state <- d_tally |>
+  group_by(state) |>
+  summarise(
+    n_fraud = sum(fraud_bin, na.rm = TRUE), 
+    prop_fraud = mean(fraud_bin, na.rm = TRUE) * 100 )
+
+
+summary(d_state)
 ```
 
 \clearpage
@@ -260,8 +303,19 @@ Using the new data frame created in Task 2.3, please visualize the *frequencies*
 Feel free to try alternative approach(es) to make your visualization nicer and more informative.
 
 ```{r}
-# YOUR CODE HERE
+# create vertical bar plot 
+d_state |>
+  ggplot(aes(x = n_fraud, y = reorder(state, n_fraud))) +
+  geom_bar(stat = "identity", fill = "grey20", alpha = 0.9) +
+  labs(title = "Prevalence of Fraud",
+       x = "Number of Fraudulent Tally Sheets",
+       y = "State") +
+  theme_classic()
 ```
+
+Describe the key takeaway from the visualization with a few sentences:
+
+The title of the bar chart is the Number of Fraudulent Tally Sheets which is a plot clearly compares the number of fraudulent tallies in each state. It provides a clear comparison of the number of fraudulent tallies in each state, in which Veracruz has the highest prevalence of fraudulent tallies whereas Colima has the lowest prevalence of fraudulent tallies.
 
 \clearpage
 
@@ -272,8 +326,17 @@ Using the new data frame created in Task 2.3, please visualize the *proportion o
 Feel free to try alternative approach(es) to make your visualization nicer and more informative.
 
 ```{r}
-# YOUR CODE HERE
+# create vertical bar plot 
+d_state |>
+  ggplot(aes(x = prop_fraud, y = reorder(state, prop_fraud))) +
+  geom_bar(stat = "identity", fill = "darkgrey", alpha = 1) +
+  labs(title = "Prevalence of Fraud",
+       x = "% of Fraudulent Tally Sheets",
+       y = "State") +
+  theme_classic()
 ```
+
+The title of the bar chart is the prevalence of fraud which it visualizes the variation in the proportion of fraudulent tallies across different states. The plot shows that Oaxaca has the highest proportion of fraudulent tallies and Distrito Federal has the lowest proportion of fraudulent tallies.
 
 \clearpage
 
@@ -282,8 +345,23 @@ Feel free to try alternative approach(es) to make your visualization nicer and m
 Create data visualization to show BOTH the *proportions* and *frequencies* of fraudulent tally sheets by state in one figure. Include annotations to highlight states with the highest level of fraud. Add informative labels to the figure. Describe the takeaways from the figure with a few sentences.
 
 ```{r, echo=TRUE}
-# YOUR CODE HERE
+# creat a bubble plot
+d_state |>
+  ggplot(aes(x = state, y = n_fraud, size = prop_fraud)) +
+  geom_point(aes(color = prop_fraud), alpha = 0.5) +
+  scale_size_continuous(range = c(5, 15)) +
+  labs(title = "Proportions & Frequencies of Fraudulent Tally Sheets by State",
+       x = "State",
+       y = "Frequency",
+       size = "Proportion") +
+  scale_color_binned() +  
+  theme_classic() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
 ```
+
+Describe the takeaways from the figure with a few sentences:
+
+The title of the bubble plot is proportions & frequencies of fraudulent tally sheets by sate, Veracruz has a relatively high frequency and a large proportion of fraudulent tally sheets. The proportion of states having fraudulent tally sheets is relatively large as well.
 
 \clearpage
 
@@ -296,7 +374,18 @@ Your next task is to clean a different dataset from the researchers' replication
 Load the dataset onto your R environment. Name this dataset `d_return`. Show summary statistics of this dataset and describe the takeaways using a few sentences.
 
 ```{r, echo=TRUE}
-# YOUR CODE
+# load d_return
+d_return <- read_csv("data/VoteReturns.csv")
+
+print(d_return)
+
+# create summary statistics
+summary(d_return)
+```
+
+```{r, echo=TRUE}
+
+
 ```
 
 \clearpage
@@ -322,17 +411,46 @@ This table contains a lot of different variables. The researcher offers no compr
 A state whose name is `Chihuahua` is mislabelled as `Chihuhua`. A state whose name is currently `Edomex` needs to be recoded to `Estado de Mexico`. Please re-code the names of these two states accordingly.
 
 ```{r, echo=TRUE}
-# YOUR CODE
+#re-code the names
+d_return <- d_return |>
+  mutate(edo = ifelse(edo == "Chihuhua", "Chihuahua", edo),
+         edo = ifelse(edo == "Edomex", "Estado de Mexico", edo))
+
+print(d_return)
 ```
 
-\clearpage
+\\clearpage
 
 ### Task 3.3. Recode districts' identifiers
 
-Compare how districts' identifiers are recorded differently in the tally (`d_tally`) from vote return (`d_return`) datasets. Specifically, in the `d_tally` dataset, `district` contains Roman numbers while in the `d_return` dataset, `dto` contains Arabic numbers. Recode districts' identifiers [in the `d_return` dataset]{.underline} to match those in the `d_tally` dataset. To complete this task, first summarize the values of the two district identifier columns in the two datasets respectively to verify the above claim. Then do the requested conversion.
+Compare how districts' identifiers are recorded differently in the tally (`d_tally`) from vote return (`d_return`) datasets. Specifically, in the `d_tally` dataset, `district` contains Roman numbers while in the `d_return` dataset, `dto` contains Arabic numbers. Recode districts' identifiers [in the `d_return` dataset]{.underline} to match those in the `d_tally` dataset. To complete this task, first summarize the values of the two district identifier columns in the two datasets respectively to verify the above claim. Then do the requested conversion./
 
 ```{r, echo=TRUE}
-# YOUR CODE HERE
+# summarize d_tally
+summary(d_tally$district)
+unique(d_tally$district)
+
+# summarize d_return
+summary(d_return$dto)
+unique(d_return$dto)
+
+# preparation of conversion
+roman_convertor <- function(x) {
+  roman_result <- ifelse(x >= 1000, "M", "")
+  roman_result <- paste0(roman_result, strrep("C", x %% 1000 %/% 100))
+  roman_result <- gsub("CCCC", "CD", roman_result)
+  roman_result <- paste0(roman_result, strrep("X", x %% 100 %/% 10))
+  roman_result <- gsub("XXXX", "XL", roman_result)
+  roman_result <- paste0(roman_result, strrep("I", x %% 10))
+  roman_result <- gsub("IIII", "IV", roman_result)
+  roman_result}
+
+# to convert
+d_return <- d_return |>
+  mutate(dto = ifelse(!is.na(dto), roman_convertor(as.integer(dto)), as.character(dto)))
+
+
+print(d_return)
 ```
 
 \clearpage
@@ -342,7 +460,15 @@ Compare how districts' identifiers are recorded differently in the tally (`d_tal
 In the `d_return` dataset, create a column named `name_image` as the first column. The column concatenate values in the three columns: `edo`, `dto`, and `foto` with an underscore `_` as separators.
 
 ```{r, echo=TRUE}
-# YOUR CODE HERE
+#create a column named name_image 
+d_return <- d_return |>
+  mutate(name_image = paste(edo, dto, foto, sep = "_"))
+
+#debug
+d_return <- d_return |>
+  select(name_image, everything())
+
+print(d_return)
 ```
 
 \clearpage
@@ -355,8 +481,17 @@ As a final step before merging `d_return` and `d_tally`, you are required to per
 
 -   Remove ending substring `.jpg`.
 
-```{r, echo=TRUE}
-# YOUR CODE HERE
+```{r}
+# turn to lower case and remove .jpg in d_return
+d_return <- d_return |>
+  mutate(name_image = tolower(str_remove(name_image, "\\.jpg")))
+
+## turn to lower case and remove .jpg in d_tally
+d_tally <- d_tally |>
+  mutate(name_image = tolower(str_remove(name_image, "\\.jpg")))
+
+print(d_return)
+print(d_tally)
 ```
 
 \clearpage
@@ -369,17 +504,34 @@ After you have successfully completed all the previous steps, join `d_return` an
 
 -   How many rows are in `d_tally` but not in `d_return`? Which states and districts are they from?
 
-```{r, echo=TRUE}
-# YOUR CODE HERE
+```{r}
+merged_data <- inner_join(d_return, d_tally, by = "name_image")
+
+# rows in d_return but not in d_tally
+rows_in_return_not_tally <- anti_join(d_return, d_tally, by = "name_image")
+
+print(paste("Rows in d_return but not in d_tally:", nrow(rows_in_return_not_tally)))
+unique(rows_in_return_not_tally$edo)
+unique(rows_in_return_not_tally$dto)
+
+# rows in d_tally but not in d_return
+rows_in_tally_not_return <- anti_join(d_tally, d_return, by = "name_image")
+
+print(paste("Rows in d_return but not in d_return:", nrow(rows_in_tally_not_return)))
+unique(rows_in_tally_not_return$state)
+unique(rows_in_tally_not_return$district)
 ```
 
 Second, create a dataset call `d` by joining `d_return` and `d_tally` by column `name_image`. `d` contains rows whose identifiers appear in *both* datasets and columns from *both* datasets.
 
 ```{r, echo=TRUE}
-# YOUR CODE HERE
+# join d_tally and d_return
+d <- inner_join(d_return, d_tally, by = "name_image")
+
+print(d)
 ```
 
-\clearpage
+\\clearpage
 
 ## Task 4. Visualize distributions of fraudulent tallies across candidates (6pt)
 
@@ -394,7 +546,16 @@ Before getting to the visualization, you should first calculate the proportion o
 -   Create three columns `salinas_prop`, `cardenas_prop`, and `clouthier_prop` that indicate the proportions of the votes these three candidates receive respectively.
 
 ```{r, echo=TRUE}
-# YOUR CODE HERE
+#load the file and need to to scad
+d <- d|>
+  mutate(total_president = salinas + cardenas + clouthier + ibarra + castillo)
+
+d <- d |>
+  mutate(salinas_prop = salinas / total_president,
+         cardenas_prop = cardenas / total_president,
+         clouthier_prop = clouthier / total_president)
+
+print(d)
 ```
 
 \clearpage
@@ -403,8 +564,44 @@ Before getting to the visualization, you should first calculate the proportion o
 
 Based on all the previous step, reproduce Figure 4 in Cantu (2019, pp. 720).
 
-```{r, echo=TRUE}
-# YOUR CODE HERE
+```{r}
+# Check the number of unique values
+unique_values <- unique(d$fraud_bin)
+num_unique_values <- length(unique_values)
+print(num_unique_values)
+```
+
+```{r}
+# Prepare data and factor president
+d_figure_2 <- d |>
+  select(name_image, salinas_prop, cardenas_prop, clouthier_prop, fraud_bin, total_president) %>%
+  pivot_longer(cols = c(salinas_prop, cardenas_prop, clouthier_prop), names_to = "president", values_to = "prop") %>%
+  mutate(president = case_when(
+    president == "salinas_prop" ~ "Salinas (PRI)",
+    president == "cardenas_prop" ~ "Clouthier (PAN)",
+    president == "clouthier_prop" ~ "Cárdenas (FDN)",
+    TRUE ~ president
+  )) %>%
+  mutate(fraud_bin = ifelse(fraud_bin == "TRUE", "Tallies identified with alterations", "Tallies identified with no alterations"))
+
+# Remove rows containing NA values
+d_figure_2 <- na.omit(d_figure_2)
+
+# Factor president to set order for facet
+d_figure_2$president <- factor(d_figure_2$president, levels = c("Salinas (PRI)", "Clouthier (PAN)", "Cárdenas (FDN)"))
+
+# Create figure 2
+d_figure_2 %>%
+  ggplot(aes(x = prop, fill = fraud_bin, color = fraud_bin, linetype = fraud_bin)) +
+  geom_density(alpha = 0.7) +
+  scale_fill_manual(name = NULL, values = c("orange", "lightblue")) +
+  scale_color_manual(name = NULL, values = c("orange", "lightblue"), guide = guide_legend(override.aes = list(fill = c("orange", "lightblue"), linetype = c("dotted", "solid")))) +
+  scale_linetype_manual(values = c("dotted", "solid"), guide = FALSE) +
+  facet_wrap(~ president, ncol = 1, strip.position = "right", scales = "free") +
+  labs(x = "Vote Share", y = "Density") +
+  theme_bw()
+
+
 ```
 
 Note: Your performance in this task will be mainly evaluated based on your output's similarity with the original figure. Pay attention to the details. For your reference, below is a version created by the instructor.
@@ -418,10 +615,24 @@ Referring to your reproduced figures and the research articles, in what way is t
 **Note:** Feel free to make *multiple* alternative designs to earn bonus credits. However, please be selective. Only a design with major differences from the existing ones can be counted as an alternative design.
 
 ```{r, echo=TRUE}
-# YOUR CODE HERE
+# Alternative graph
+d_figure_2 |>
+  ggplot(aes(x = fraud_bin, y = prop, fill = fraud_bin)) +
+  geom_violin(alpha = 0.7) +
+  scale_fill_manual(name = NULL, values = c("orange", "lightblue")) +
+  facet_wrap(~ president, ncol = 1, strip.position = "right", scales = "free") +
+  labs(x = NULL, y = "Vote Share Density") +
+  theme_bw()
+
 ```
 
 **Note:** Feel free to suggest *multiple* alternative designs to earn bonus credits. However, please be selective. Only a design with major differences from the existing ones can be counted as an alternative design.
+
+Discussion:
+
+Figure 4 backs the­ researcher's claim showing cle­ar differences in vote­ shares betwee­n "clean" and "fraudulent" counts for the top thre­e contenders in Me­xico's 1988 election. Salinas's vote share­s in clean counts stand out against the modified one­s. It signifies strong support and points towards possible voting fraud. Cárdenas's vote­ shares drop in fraudulent counts, this supports existing thoughts about fraud me­thods during one-party rule. The figure­ effectively shows change­s in vote behaviors; enhancing the­ researcher's ability to visually de­tect potential fraud, and backing the re­searcher's stateme­nts about the kind of voting irregularities.
+
+The alternative design swaps the clustering graph for violin plots, showing a fre­sh perspective on how vote­ shares are distributed. It holds the­ line betwee­n dishonest and honest counts, but lays more stre­ss on the pattern and spread of distributions. The­ violin plots reveal how thick the data is, making it simple­r to spot peaks, skew, and shifts in the vote­ share distributions. The new de­sign is successful because it pre­sents a novel view of data distribution, possibly improving the­ watcher's comprehension of the­ trends and changes in the vote­ shares among the candidates running for pre­sident.
 
 \clearpage
 
@@ -446,7 +657,16 @@ As you might have noticed in the caption of Figure 5 in Cantu (2019, pp. 720), t
 -   `prop_fraud`: Proportions of fraudulent tallies (hint: using `fraud_bin`)
 
 ```{r, echo=TRUE}
-# YOUR CODE HERE
+sum_fraud_by_district <- d |>
+  group_by(state, district) |>
+  summarise(
+    vote_president = sum(total_president),
+    vote_legislature = sum(total),
+    vote_diff = sum(total_president) - sum(total),
+    prop_fraud = mean(fraud_bin, na.rm = TRUE))
+
+
+print(sum_fraud_by_district)
 ```
 
 \clearpage
@@ -456,7 +676,17 @@ As you might have noticed in the caption of Figure 5 in Cantu (2019, pp. 720), t
 Based on all the previous step, reproduce Figure 5 in Cantu (2019, pp. 720).
 
 ```{r, echo=TRUE}
-# YOUR CODE HERE
+sum_fraud_by_district %>%
+  ggplot(aes(x = vote_legislature, y = vote_president)) +
+  geom_count(aes(size = prop_fraud), color = "grey50", alpha = 0.5) +
+  labs(x = "Total Legislative Votes", y = "Total Presidential Votes", 
+       size = "Proportion of tallies with alterations") +
+  scale_size_continuous(range = c(1, 10)) +
+  theme_minimal() +
+  scale_x_continuous(limits = c(0, max(sum_fraud_by_district$vote_legislature) + 5000)) +
+  scale_y_continuous(limits = c(0, max(sum_fraud_by_district$vote_president) + 5000)) 
+
+
 ```
 
 **Note 1:** Your performance in this task will be mainly evaluated based on your output's similarity with the original figure. Pay attention to the details.
@@ -472,8 +702,20 @@ Referring to your reproduced figures and the research articles, in what way is t
 **Note:** Feel free to make *multiple* alternative designs to earn bonus credits. However, please be selective. Only a design with major differences from the existing ones can be counted as an alternative design.
 
 ```{r, echo=TRUE}
-# YOUR CODE HERE
+sum_fraud_by_district %>%
+  ggplot(aes(x = district, y = vote_president, fill = prop_fraud)) +
+  geom_bar(stat = "identity") +
+  labs(x = "District", y = "Total Presidential Votes", 
+       fill = "Proportion of tallies with alterations") +
+  scale_fill_gradient(low = "green", high = "red", name = "Fraud Proportion") +
+  theme_minimal()
 ```
+
+**Discussion:**
+
+Figure 5 give­s a clear image that backs the re­searcher's claim. It shows a mismatch in the vote­ count of both the presidential and le­gislative elections in 1988. Bigge­r dots in the figure mean more­ altered results in that are­a.
+
+The alternative bar chart can provide visual aid as effectively as the original chart because it presents the number of votes received in the presidential election for each district in a long bar chart and uses colour coding to represent the proportion of fraudulent counts, effectively showing the variation in fraudulent proportions across districts. The colour gradient emphasises the importance of the fraudulent proportions and provides a more intuitive visual interpretation.
 
 \clearpage
 
@@ -487,7 +729,7 @@ As you may recall, map data can be stored and shared in **two** ways. The simple
 
 Below the instructor provide you with the code to load the maps stored under the two formats respectively. Please run them before starting to work on your task.
 
-```{r, echo=TRUE, results='hide', eval=FALSE}
+```{r, echo=TRUE, results='hide'}
 # IMPORTANT: Remove eval=FALSE above when you start this part!
 
 # Load map (simple)
@@ -514,7 +756,35 @@ Note:
 -   Hint: Check the states' names in the map data and the electoral fraud data. Recode them if necessary.
 
 ```{r, echo=TRUE}
-# YOUR CODE HERE
+# Identify items that require recoding
+setdiff(unique(map_mex$state_name), unique(d_state$state))
+setdiff(unique(d_state$state), unique(map_mex$state_name))
+
+# Recode items
+d_state_count <- d_state %>%
+  mutate(state = ifelse(state == "Distrito Federal", "Ciudad de México",
+                        ifelse(state == "Edomex", "México",
+                               ifelse(state == "Michoacan", "Michoacán",
+                                      ifelse(state == "Nuevo Leon", "Nuevo León",
+                                             ifelse(state == "Queretaro", "Querétaro",
+                                                    ifelse(state == "San Luis Potosi", 
+                                                           "San Luis Potosí",
+                                                           ifelse(state == "Yucatan", 
+                                                                  "Yucatán", state))))))))
+
+# Join the count data with the map data
+tallies_by_state <- left_join(map_mex, d_state_count, by = c("state_name" = "state"))
+
+# Plot the map
+ggplot() +
+  geom_polygon(data = tallies_by_state, aes(x = long, y = lat, group = group, 
+                                            fill = prop_fraud), color = "gray50", linewidth = 0.3) + 
+  scale_fill_gradient(low = "white", high = "black") +
+  theme(legend.position = "right") +
+  coord_map() +
+  theme_void() +
+  labs(fill = "Proportion of Altered Tallies")
+
 ```
 
 \clearpage
@@ -530,7 +800,35 @@ Note:
 -   Hint: Check the states' names in the map data and the electoral fraud data. Recode them if necessary.
 
 ```{r, echo=TRUE}
-# YOUR CODE HERE
+# Identify items that require recoding
+setdiff(unique(map_mex_sf$state_name), unique(d_state$state))
+setdiff(unique(d_state$state), unique(map_mex_sf$state_name))
+
+# Recode items
+d_state_count_sf <- d_state %>%
+  mutate(state = ifelse(state == "Distrito Federal", "Ciudad de México",
+                        ifelse(state == "Edomex", "México",
+                               ifelse(state == "Michoacan", "Michoacán",
+                                      ifelse(state == "Nuevo Leon", "Nuevo León",
+                                             ifelse(state == "Queretaro", "Querétaro",
+                                                    ifelse(state == "San Luis Potosi", 
+                                                           "San Luis Potosí",
+                                                           ifelse(state == "Yucatan", 
+                                                                  "Yucatán", state))))))))
+
+# Join the count data with the map data
+tallies_by_state_sf <- left_join(map_mex_sf, d_state_count_sf, by = c("NAME_1" = "state"))
+
+names(tallies_by_state_sf)
+
+# Plot the map
+ggplot() +
+  geom_sf(data = tallies_by_state_sf, aes(fill = prop_fraud), 
+          color = "gray50", size = 0.3) +
+  scale_fill_gradient(low = "white", high = "black") +
+  theme(legend.position = "right") +
+  theme_void() +
+  labs(fill = "Proportion of Altered Tallies")
 ```
 
 \clearpage
@@ -542,5 +840,33 @@ Referring to your reproduced figures and the research articles, in what way is t
 **Note:** Feel free to make *multiple* alternative designs to earn bonus credits. However, please be selective. Only a design with major differences from the existing ones can be counted as an alternative design.
 
 ```{r, echo=TRUE}
-# YOUR CODE HERE
+
+figure_3 <- ggplot() +
+  geom_polygon(data = tallies_by_state, aes(x = long, y = lat, group = group, 
+                                            fill = prop_fraud), color = "gray50", 
+               linewidth = 0.3) + 
+  scale_fill_gradient(low = "white", high = "black") +
+  theme(legend.position = "right") +
+  coord_map() +
+  theme_void() +
+  labs(fill = "Proportion of Altered Tallies")+
+   ggtitle("Distribution")
+
+figure_4 <- ggplot() +
+  geom_sf(data = tallies_by_state_sf, aes(fill = prop_fraud), color = "gray50", 
+          size = 0.3) +
+  scale_fill_gradient(low = "white", high = "black") +
+  theme(legend.position = "right") +
+  theme_void() +
+  labs(fill = "Proportion of Altered Tallies") +
+  ggtitle("Distribution sf")
+
+# Arrange the plots side by side
+grid.arrange(figure_3, figure_4, ncol = 2)
+
 ```
+
+Discussion:\
+The visual evidence provided in Figure 3 supports researchers' argument which reveals the spatial distribution of election fraud across Mexican states. The paper claims that, at state level, the map shows different rates of statistical change, with less than 3% in Mexico City and 66% in Tlaxcala. Another design compares the original map side-by-side with its equivalent in sf format providing a more detailed look of how changes are spread geographically as argued by the researcher. Thus, this visualization clearly indicates that southern part has a comparatively higher concentration of statistical changes that is consistent with research article's stance.
+
+The alternative design shows the original map (figure_3) and a map that uses the sf format (figure_4) side by side. The major role of this design is to show any differences between the two maps. Alternatively, the alternative design helps in providing more information about electoral fraud's distribution across space as it gives a chance for an analytical approach to such data through both approaches.

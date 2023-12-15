@@ -26,10 +26,10 @@ library(kableExtra)  # Package for data presentation at Rmarkdown
 
 d = read_rds("Lec_10/1_Text_Mining/data/data_ce_speech_article.rds")
 
-dim(d) \# Get dimension of dataset d
-names(d) \# Get column names of dataset d
+dim(d) \# Get dimension of dataset d names(d) \# Get column names of dataset d
 
-# str(d) \# chr 
+# str(d) \# chr
+
 # DT::datatable(d \|\> slice(1:5))
 
 ```{r, results="asis"}
