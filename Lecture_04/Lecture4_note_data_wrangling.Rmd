@@ -1,0 +1,161 @@
+---
+title: "Lecture4_note_data_wrangling"
+author: "Shukyee Chan"
+date: "2023-09-28"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+```
+
+## Lecture 4: Data Wrangling
+
+### 0. load the packages
+
+```{r}
+library(tidyverse)
+```
+
+### 1. Import and Export the V-Dem
+
+```{r}
+d <- read.csv("_DataPublic_/vdem/1984_2022/vdem_1984_2022_external.csv")
+
+getwd()
+```
+
+### 2. Select economic development indicators
+
+Look at the identifiers of the data
+
+```{r}
+# names(d)
+
+# Alternative functions (provides information about the dataset): The str() provides not only variable names, but also their data types and a few example data points.
+
+str(d)
+```
+
+```{r}
+d |> select(country_name, country_id, year) |>
+  distinct()
+```
+
+```{r}
+?distinct
+# "distinct" means telling it not to repeat, keep only unique/distinct rows from a data frame
+```
+
+```{r}
+# Which countries are in this dataset
+d |> select(country_name) |> distinct()
+# if don't have the distinct function , it will show all country name including those repeat
+```
+
+```{r}
+d |> select(year) |> distinct()
+```
+
+Select both the country identifier, GDP, and GDP per capita
+
+```{r}
+d_gdp <- d |> select(country_name, country_id, year, e_gdp, e_gdppc)
+```
+
+### 3. Rename columns to make names informative
+
+```{r}
+d_gdp <- d_gdp |> 
+  rename("GDP" = "e_gdp", "GDP_per_capita" = "e_gdppc", "Year" = "year", "Country" = "country_name", "ID" = "country_id")
+
+d_gdp
+```
+
+### 4. `slice` Rows
+
+```{r}
+# to extract a subset of rows from a dataset based on specific criteria, such as selecting rows with the largest or smallest values in a particular column.
+?slice
+# slice() lets you index rows by their (integer) locations. It allows you to select, remove, and duplicate rows.
+```
+
+```{r}
+#Want countries-years with higest GDP
+d_gdp |>
+  slice_max(order_by = GDP, n = 10)
+# n = 10, mean wants the top 10 counties among the whole dataset
+# It just guaranteed thar giver the top 10 you specific, yet it doesn't guatantee that they are sorted properly
+```
+
+```{r}
+# the case that have the lowest gdp
+# Get the countries-years with the lowest GDP
+d_gdp |>
+  slice_min(order_by = GDP, n = 10)
+```
+
+```{r}
+# what if you want some random sample
+d_gdp |> 
+  slice_sample(n = 10) # sample 10 observations => randomly give you 10
+
+# sample = everytime you run it, it gives you different results
+
+# but the report should be replicable and reproduciable (which have to get the same random results everytime_ => so need to set the random seed
+
+set.seed(52)
+d_gdp |> 
+  slice_sample(n = 10)
+#set.seed function is requried in every random sampling
+#the seed value of 52 is chosen randomly It could have been any other integer value. The purpose of setting the seed is to obtain the same random sample of rows every time the code is executed, as long as the seed value remains the same.
+```
+
+```{r}
+# if you want 10% of the data 
+set.seed(52)
+
+d_gdp |>
+  slice_sample(prop = 0.1)
+# 10% of the data is 678 observations
+
+```
+
+### 5. Subset data by row `filter`
+
+```{r}
+# Want: 2000-2005 data (conditions you want)
+# new function to use is "filter"
+d_gdp |> filter(Year >= 2000 & Year <= 2005)
+# >= refers to less than or equal to 2000, <= refers to greater than or equal to
+```
+
+```{r}
+# Want GDP data in China
+d_gdp |> filter(Country == "China")
+```
+
+```{r}
+# Want: 2000-2005 from china
+d_gdp |> 
+  filter(Year >= 2000 & Year <= 2005) |>
+  filter(Country == "China")
+
+# it works too
+d_gdp |> filter(Year >= 2000 & Year <= 2005 & 
+                  Country == "China")
+
+```
+
+### 6. Arrange
+
+```{r}
+# Want: sort the data row by GDP per capita
+# lowest to largest
+d_gdp |> arrange(GDP_per_capita)
+```
+
+```{r}
+# largest to lowest
+d_gdp |> arrange(-GDP_per_capita)
+```
