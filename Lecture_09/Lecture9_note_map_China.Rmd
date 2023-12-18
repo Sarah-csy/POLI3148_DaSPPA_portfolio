@@ -1,0 +1,90 @@
+---
+title: "Lecture9_note_map_China"
+author: "Shukyee Chan"
+date: "2023-11-09"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(fig.width = 9, fig.height = 3, message = FALSE, warning = FALSE)
+```
+
+## Load the packages
+
+```{r}
+library(tidyverse)
+library(ggthemes)
+theme_set(theme_map())
+
+library(sf)
+sf_use_s2(FALSE)
+
+# Display Chinese text with ggplot
+library(showtext)
+showtext_auto()
+```
+
+## Load China Map
+
+```{r}
+library(mapchina)
+chinamap = china
+```
+
+## Plot China Map
+
+```{r}
+ggplot(data = chinamap) +
+  geom_sf()
+```
+
+```{r}
+ggplot(data = chinamap) +
+  geom_sf(aes(fill = Name_Province)) +
+  theme(legend.position = "none")
+```
+
+```{r}
+hkmap = chinamap |> filter(Name_Province == "香港特别行政区")
+
+ggplot(data = hkmap) +
+  geom_sf() +
+  geom_sf_label(aes(label = Name_County))
+
+ggplot(data = hkmap) +
+  geom_sf()
+```
+
+## Merge Geographic Units
+
+```{r}
+# Merge into provincial-level units
+chinamap_province = chinamap |>
+  group_by(Code_Province, Name_Province) |>
+  summarise(
+    geometry = st_union(geometry)
+  ) 
+
+chinamap_province |>
+  ggplot() + geom_sf()
+
+chinamap_province |>
+  ggplot() + geom_sf() +
+  geom_sf_text(aes(label = Name_Province))
+```
+
+```{r}
+chinamap_prefecture = chinamap |>
+  mutate(
+    Code_Prefecture = Code_Perfecture,
+    Name_Prefecture_t = 
+      ifelse(is.na(Name_Perfecture), Name_Province, Name_Perfecture)
+  ) |>
+  group_by(Code_Perfecture, Name_Prefecture_t) |>
+  summarise(
+    geometry = st_union(geometry)
+    ) 
+
+chinamap_prefecture |>
+  ggplot() + geom_sf()
+```
