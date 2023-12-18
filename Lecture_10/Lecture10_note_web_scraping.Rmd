@@ -1,0 +1,114 @@
+---
+title: "Lecture10_note_web_scraping"
+author: "Shukyee Chan"
+date: "2023-11-23"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
+```
+
+## 1.1. retrieve single doc
+
+```{r}
+library(tidyverse)
+library(rvest) # This is one package that handles webpages retrieval and parsing
+library(xml2) # This is another package that handles webpages retrieval and parsing
+```
+
+```{r}
+dir.create("Lecture_10/data_1") # Create a new folder
+```
+
+### Retrieve CE's last article
+
+```{r}
+download.file(
+  url = "https://www.ceo.gov.hk/archive/5-term/eng/pdf/article20220530.pdf",
+  destfile = "Lecture_10/data_1/20220530.pdf")
+```
+
+### Retrieve CE's last speech
+
+```{r}
+doc_html <- read_html("https://www.info.gov.hk/gia/general/202206/21/P2022062100598.htm")
+write_html(doc_html, "Lecture_10/data_1/20220621.htm")
+
+# read_html function is available on both rvest and xml2 packages
+# write_html function is only available on xml2 package
+```
+
+## 1.2. parse single doc
+
+```{r}
+library(pdftools)
+```
+
+### Parse a PDF document
+
+```{r}
+# Function to parse a PDF file
+pdf_parsed <- pdf_text("Lecture_10/data_1/20220530.pdf")
+pdf_parsed
+```
+
+```{r}
+# It returns a vector of 8 elements. Why 8? 8 pages! Each page is put in a separate element.
+length(pdf_parsed)
+```
+
+```{r}
+# Save the file into a .txt file (a text document)
+write(pdf_parsed, file = "Lecture_10/data_1/20220530_parsed.txt")
+```
+
+### Parse a webpage
+
+```{r}
+# Load the HTML file
+doc_html <- read_html("Lecture_10/data_1/20220621.htm")
+typeof(doc_html)
+class(doc_html)
+```
+
+```{r}
+# Check what it looks like again
+print(doc_html)
+```
+
+#### Lazy parsing
+
+```{r}
+# Just get all the text
+html_parsed <- html_text(doc_html) # Blindly retrieve all the text form the webpage
+print(html_parsed)
+write(html_parsed, "Lecture_10/data_1/20220621_parsed_lazy.txt")
+```
+
+#### Precise parsing
+
+```{r}
+# Step 1: Use SelectGadget to locate the content of interest
+
+# Step 2: Use R to locate the section
+text_all <- doc_html %>%
+  html_elements("#contentBody") %>%
+  html_text()
+
+text_title <- doc_html %>%
+  html_elements("#PRHeadlineSpan") %>%
+  html_text()
+
+text_body <- doc_html %>%
+  html_elements("#pressrelease") %>%
+  html_text()
+
+### Step 3: Save the results
+
+write(text_all, "data_1/20220621_parsed_all.txt")
+write(text_title, "data_1/20220621_parsed_title.txt")
+write(text_body, "data_1/20220621_parsed_body.txt")
+```
