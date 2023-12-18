@@ -1,0 +1,37 @@
+---
+title: "Lecture9_note_point_reference"
+author: "Shukyee Chan"
+date: "2023-11-09"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(fig.width = 9, fig.height = 3, message = FALSE, warning = FALSE)
+```
+
+## Load the Packages
+
+```{r}
+library(tidyverse)
+library(ggthemes)
+theme_set(theme_map())
+```
+
+## Download UCDP Data
+
+```{r, eval=TRUE}
+# Location: https://ucdp.uu.se/downloads/
+
+download.file(
+  "https://ucdp.uu.se/downloads/ged/ged221-csv.zip",
+  destfile = "Lec_09/data/ged221-csv.zip")
+
+# Decompress the downloaded ZIP file
+unzip("Lec_09/data/ged221-csv.zip", exdir = "Lec_09/data")
+
+# Codebook available on the website
+
+```
+
+## Load the Conflict Data
+
